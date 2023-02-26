@@ -15,6 +15,7 @@ public class WordleGrid extends JFrame {
   private static final int MAX_NUMBER_GUESSES = 6;
 
   private static final String TARGET = "FAVOR";
+  public String currentGuess = "";
   public static WordleCell[][] cells;
 
   public static int currentRow = 0;
@@ -26,9 +27,8 @@ public class WordleGrid extends JFrame {
   public static JButton guessButton;
 
   @Override
-  protected void frameInit(){
+  protected void frameInit() {
     super.frameInit();
-    super.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
     createPanels();
     createCells();
@@ -38,85 +38,58 @@ public class WordleGrid extends JFrame {
     guessButton.setEnabled(false);
 
     super.addKeyListener(new KeyAdapter() {
-      int keyCodeBackSpace = 8;
-      int keyCodeEnter = 10;
+      final int keyCodeBackSpace = 8;
+      final int keyCodeEnter = 10;
 
       @Override
       public void keyTyped(KeyEvent e) {
-        Character myChar = e.getKeyChar();
-        if (currentCol == 4 && cells[currentRow][currentCol].cellChar != ""){
+        if (currentRow >= MAX_NUMBER_GUESSES || (currentCol == 4 && cells[currentRow][currentCol].cellChar.equals(""))) {
           return;
         }
 
-        if (currentCol < WORD_SIZE && Character.isLetterOrDigit(myChar)) {
-          cells[currentRow][currentCol].cellChar = String.valueOf(myChar);
-          cells[currentRow][currentCol].setText(cells[currentRow][currentCol].cellChar.toUpperCase());
-          e.consume();
-
-          if (currentCol == 4) {
-            guessButton.setEnabled(true);
-            return;
+        if (Character.isLetterOrDigit(e.getKeyChar())){
+          Character myChar = e.getKeyChar();
+          if(currentGuess.length() < 5) {
+            currentGuess += myChar.toString().toUpperCase();
+            displayGuess();
           }
-
-          currentCol++;
         }
+
+        toggleGuessButtonStatus();
       }
 
       @Override
-      public void keyReleased(KeyEvent e){
+      public void keyReleased(KeyEvent e) {
+        if (e.getKeyCode() == keyCodeEnter && guessButton.isEnabled()){
+          onPressingGuessButton();
+        }
+
         if (e.getKeyCode() == keyCodeBackSpace && currentCol >= 0){
           if (currentCol == 0) {
             return;
           }
 
           currentCol--;
+          toggleGuessButtonStatus();
         }
       }
 
       @Override
       public void keyPressed(KeyEvent e){
-        if (e.getKeyCode() == keyCodeEnter && guessButton.isEnabled()){
-          if (currentRow < MAX_NUMBER_GUESSES){
-            guessButton.setFocusable(false);
-
-            setCellColor();
-            showGameStatus();
-
-            currentRow++;
-            currentCol = 0;
-            guessButton.setEnabled(false);
-          }
+        if (e.getKeyCode() == keyCodeEnter && guessButton.isEnabled()) {
+          onPressingGuessButton();
         }
 
-        if (e.getKeyCode() == keyCodeBackSpace && currentCol >= 0){
-
-          if (cells[currentRow][currentCol].getText() == "" && currentCol > 0){
-            cells[currentRow][currentCol - 1].setText("");
-            cells[currentRow][currentCol].cellChar = "";
-            return;
-          }
-
-          cells[currentRow][currentCol].setText("");
-          e.consume();
-          cells[currentRow][currentCol].cellChar = "";
-
-          if (currentCol == 0) {
-            return;
-          }
-
-          if (currentCol < 4) {
-            guessButton.setEnabled(false);
-          }
+        if(e.getKeyCode() == keyCodeBackSpace && currentGuess.length() > 0) {
+          onPressingBackSpace();
         }
       }
     });
 
-    super.setTitle("Wordle");
-    super.setSize(500, 500);
-    super.setVisible(true);
+    guessButton.setFocusable(false);
   }
 
-  public void createPanels(){
+  public void createPanels() {
     wordleContainer = new JPanel();
     wordleContainer.setLayout(new BoxLayout(wordleContainer, BoxLayout.Y_AXIS));
 
@@ -125,33 +98,24 @@ public class WordleGrid extends JFrame {
 
     guessButtonPanel = new JPanel();
     guessButton = new JButton("Guess");
+    guessButtonPanel.add(guessButton);
+
     guessButton.addActionListener(new ActionListener() {
       @Override
       public void actionPerformed(ActionEvent e) {
-        if (currentRow < MAX_NUMBER_GUESSES){
-          guessButton.setFocusable(false);
-
-          setCellColor();
-          showGameStatus();
-
-          currentRow++;
-          currentCol = 0;
-          guessButton.setEnabled(false);
-        }
+        onPressingGuessButton();
       }
     });
-
-    guessButtonPanel.add(guessButton);
 
     wordleContainer.add(gridUI);
     wordleContainer.add(guessButtonPanel);
   }
 
-  public void createCells(){
+  public void createCells() {
     cells = new WordleCell[MAX_NUMBER_GUESSES][WORD_SIZE];
 
-    for(int i = 0; i < MAX_NUMBER_GUESSES; i++){
-      for (int j = 0; j < WORD_SIZE; j++){
+    for(int i = 0; i < MAX_NUMBER_GUESSES; i++) {
+      for (int j = 0; j < WORD_SIZE; j++) {
         cells[i][j] = new WordleCell(i, j);
         cells[i][j].setBorder(BorderFactory.createLineBorder(Color.BLACK));
         cells[i][j].setText(cells[i][j].cellChar);
@@ -163,46 +127,76 @@ public class WordleGrid extends JFrame {
     }
   }
 
-  public String getGuess(){
-    String guessResult = "";
-    for (int j = 0; j < WORD_SIZE; j++){
-      guessResult += cells[currentRow][j].cellChar.toUpperCase();
+  public void onPressingGuessButton(){
+    if (currentRow < MAX_NUMBER_GUESSES){
+      guessButton.setFocusable(false);
+
+      setCellColor();
+      showGameStatus();
+
+      currentRow++;
+      currentCol = 0;
+      currentGuess = "";
+      guessButton.setEnabled(false);
     }
-    return guessResult;
+  }
+
+  public void onPressingBackSpace(){
+    for(int i = 0; i < WORD_SIZE; i++) {
+      cells[currentRow][i].setText("");
+      cells[currentRow][i].cellChar = "";
+    }
+
+    currentGuess = currentGuess.substring(0, currentGuess.length()-1);
+    displayGuess();
+  }
+
+  public void displayGuess() {
+    if(currentGuess.length() > 5) {
+      return;
+    }
+
+    for(int i = 0; i < currentGuess.length(); i++) {
+      cells[currentRow][i].cellChar = ("" + currentGuess.charAt(i)).toUpperCase();
+      cells[currentRow][i].setText(("" + currentGuess.charAt(i)).toUpperCase());
+      currentCol = i;
+    }
   }
 
   public void setCellColor() {
-    String myGuess = getGuess();
-    Response guessResponse = Wordle.play(TARGET, myGuess, currentRow);
+    Response guessResponse = Wordle.play(TARGET, currentGuess, currentRow);
 
-    HashMap<Match, Color> myMap = new HashMap<>();
-    myMap.put(Match.EXACT, Color.GREEN);
-    myMap.put(Match.EXISTS, Color.YELLOW);
-    myMap.put(Match.NO_MATCH, Color.GRAY);
+    var responseColorCodes = Map.of(Match.EXACT, Color.GREEN, Match.EXISTS, Color.YELLOW, Match.NO_MATCH, Color.GRAY);
 
     for (int i = 0; i < WORD_SIZE; i++) {
       Match matchType = guessResponse.response().get(i);
-
-      cells[currentRow][i].setBackground(myMap.get(matchType));
+      cells[currentRow][i].setBackground(responseColorCodes.get(matchType));
     }
   }
 
-  public void showGameStatus(){
-    String myGuess = getGuess();
+  public void toggleGuessButtonStatus(){
+    boolean isButtonEnabled = currentGuess.length() == 5;
+    guessButton.setEnabled(isButtonEnabled);
+  }
 
-    if (currentRow + 1 == MAX_NUMBER_GUESSES){
+  public void showGameStatus() {
+    if (currentRow + 1 == MAX_NUMBER_GUESSES && !currentGuess.equals(TARGET)) {
       currentRow++;
     }
     
-    Response guessResponse = Wordle.play(TARGET, myGuess, currentRow);
+    Response guessResponse = Wordle.play(TARGET, currentGuess, currentRow);
 
-    if (!guessResponse.status().equals(GameStatus.IN_PROGRESS)){
+    if (!guessResponse.status().equals(GameStatus.IN_PROGRESS)) {
       JOptionPane.showMessageDialog(super.getComponent(0), guessResponse.message());
       super.setFocusable(false);
     }
   }
 
   public static void main(String[] args){
-    new WordleGrid();
+    JFrame myGame = new WordleGrid();
+    myGame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    myGame.setTitle("Wordle");
+    myGame.setSize(500, 500);
+    myGame.setVisible(true);
   }
 }
