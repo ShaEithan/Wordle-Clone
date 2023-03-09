@@ -4,6 +4,7 @@ import game.Response;
 import game.Wordle;
 import game.Wordle.Match;
 import game.Wordle.GameStatus;
+import game.AgileCSSpellChecker;
 
 import javax.swing.*;
 import java.awt.*;
@@ -26,9 +27,14 @@ public class WordleGrid extends JFrame {
   JPanel guessButtonPanel;
   public static JButton guessButton;
 
+  Wordle wordle;
   @Override
   protected void frameInit() {
     super.frameInit();
+
+    wordle = new Wordle();
+    AgileCSSpellChecker spellChecker = new AgileCSSpellChecker();
+    wordle.setSpellChecker(spellChecker);
 
     createPanels();
     createCells();
@@ -128,11 +134,19 @@ public class WordleGrid extends JFrame {
   }
 
   public void onPressingGuessButton(){
-    if (currentRow < MAX_NUMBER_GUESSES){
+    if (currentRow < MAX_NUMBER_GUESSES) {
+      Response guessResponse = wordle.play(TARGET, currentGuess, currentRow);
+
+      if (guessResponse.status().equals(GameStatus.WRONG_SPELLING)){
+        JOptionPane.showMessageDialog(super.getComponent(0), "Not a word.");
+        guessButton.setEnabled(false);
+        return;
+      }
+
       guessButton.setFocusable(false);
 
-      setCellColor();
-      showGameStatus();
+      setCellColor(guessResponse);
+      showGameStatus(guessResponse);
 
       currentRow++;
       currentCol = 0;
@@ -163,9 +177,7 @@ public class WordleGrid extends JFrame {
     }
   }
 
-  public void setCellColor() {
-    Response guessResponse = Wordle.play(TARGET, currentGuess, currentRow);
-
+  public void setCellColor(Response guessResponse) {
     var responseColorCodes = Map.of(Match.EXACT, Color.GREEN, Match.EXISTS, Color.YELLOW, Match.NO_MATCH, Color.GRAY);
 
     for (int i = 0; i < WORD_SIZE; i++) {
@@ -179,12 +191,10 @@ public class WordleGrid extends JFrame {
     guessButton.setEnabled(isButtonEnabled);
   }
 
-  public void showGameStatus() {
+  public void showGameStatus(Response guessResponse) {
     if (currentRow + 1 == MAX_NUMBER_GUESSES && !currentGuess.equals(TARGET)) {
-      currentRow++;
+      guessResponse = wordle.play(TARGET, currentGuess, currentRow + 1);
     }
-    
-    Response guessResponse = Wordle.play(TARGET, currentGuess, currentRow);
 
     if (!guessResponse.status().equals(GameStatus.IN_PROGRESS)) {
       JOptionPane.showMessageDialog(super.getComponent(0), guessResponse.message());

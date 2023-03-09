@@ -3,11 +3,17 @@ package game;
 import java.util.*;
 import java.util.stream.*;
 
-public interface Wordle {
+public class Wordle {
   final static int WORD_SIZE = 5;
   final static int MAX_GUESS_NUMBER = 6;
-  enum Match {EXACT, EXISTS, NO_MATCH}
-  enum GameStatus {WIN, LOSS, IN_PROGRESS}
+  public enum Match {EXACT, EXISTS, NO_MATCH}
+  public enum GameStatus {WIN, LOSS, IN_PROGRESS, WRONG_SPELLING}
+
+  private SpellChecker spellChecker;
+
+  public void setSpellChecker(SpellChecker aSpellChecker) {
+    spellChecker = aSpellChecker;
+  }
 
   static List<Match> tally(String target, String guess) throws RuntimeException {
     if (guess.length() != WORD_SIZE) {
@@ -46,21 +52,35 @@ public interface Wordle {
       .count();
   }
 
-  static Response play(final String target, final String guess, final int attempts) {
+  static GameStatus getGameStatus(int attempts, boolean isAllExact){
+    return ((attempts + 1) > MAX_GUESS_NUMBER) ? GameStatus.LOSS
+      : (isAllExact) ? GameStatus.WIN
+      : GameStatus.IN_PROGRESS;
+  }
+
+  static String getEndGameMessage(GameStatus gameStatus, int attempts, final String target){
+    List<String> messageBank = List.of("Amazing", "Splendid", "Awesome");
+
+    return (gameStatus == GameStatus.WIN) ? messageBank.get(attempts)
+      : (gameStatus == GameStatus.LOSS) ? ("It was " + target + ", better luck next time")
+      : "";
+  }
+
+  public Response play(final String target, final String guess, final int attempts) {
+    if(!spellChecker.isSpellingCorrect(guess)) {
+      return new Response(attempts, List.of(), GameStatus.WRONG_SPELLING, "");
+    }
+
     var matches = tally(target, guess);
 
     boolean isAllExact = IntStream.range(0, WORD_SIZE)
       .allMatch(index -> matches.get(index) == Match.EXACT);
 
-    GameStatus gameStatus = ((attempts + 1) > MAX_GUESS_NUMBER) ? GameStatus.LOSS
-      : (isAllExact) ? GameStatus.WIN
-      : GameStatus.IN_PROGRESS;
 
-    List<String> messageBank = List.of("Amazing", "Splendid", "Awesome", "Yay");
-    String message = (gameStatus == GameStatus.WIN && attempts >= 3) ? messageBank.get(3)
-      : (gameStatus == GameStatus.WIN) ? messageBank.get(attempts)
-      : (gameStatus == GameStatus.LOSS) ? ("It was " + target + ", better luck next time")
-      : "";
+    GameStatus gameStatus = getGameStatus(attempts, isAllExact);
+
+    String message = gameStatus == GameStatus.WIN && attempts >= 3 ?
+      "Yay" : getEndGameMessage(gameStatus, attempts, target);
 
     return new Response(attempts + 1, matches, gameStatus, message);
   }
