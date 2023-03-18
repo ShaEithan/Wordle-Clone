@@ -1,6 +1,7 @@
 package game.ui;
 
 import game.Response;
+import game.WordPicker;
 import game.Wordle;
 import game.Wordle.Match;
 import game.Wordle.GameStatus;
@@ -9,13 +10,14 @@ import game.AgileCSSpellChecker;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.lang.annotation.Target;
 import java.util.*;
 
 public class WordleGrid extends JFrame {
   private static final int WORD_SIZE = 5;
   private static final int MAX_NUMBER_GUESSES = 6;
 
-  private static final String TARGET = "FAVOR";
+  private static String TARGET;
   public String currentGuess = "";
   public static WordleCell[][] cells;
 
@@ -28,13 +30,19 @@ public class WordleGrid extends JFrame {
   public static JButton guessButton;
 
   Wordle wordle;
+
   @Override
   protected void frameInit() {
     super.frameInit();
 
     wordle = new Wordle();
+
     AgileCSSpellChecker spellChecker = new AgileCSSpellChecker();
     wordle.setSpellChecker(spellChecker);
+
+    WordPicker wordPicker = new WordPicker();
+
+    TARGET = setTarget(wordPicker);
 
     createPanels();
     createCells();
@@ -183,6 +191,14 @@ public class WordleGrid extends JFrame {
     for (int i = 0; i < WORD_SIZE; i++) {
       Match matchType = guessResponse.response().get(i);
       cells[currentRow][i].setBackground(responseColorCodes.get(matchType));
+    }
+  }
+
+  public String setTarget(WordPicker wordPicker){
+    try{
+      return wordPicker.getRandomWord();
+    } catch (Exception ex){
+      throw new RuntimeException("Invalid Word");
     }
   }
 

@@ -15,14 +15,15 @@ public class Wordle {
     spellChecker = aSpellChecker;
   }
 
+  public
   static List<Match> tally(String target, String guess) throws RuntimeException {
     if (guess.length() != WORD_SIZE) {
       throw new RuntimeException("Invalid Guess Length");
     }
 
     return IntStream.range(0, WORD_SIZE)
-      .mapToObj(index -> tallyForPosition(index, target, guess))
-      .toList();
+            .mapToObj(index -> tallyForPosition(index, target, guess))
+            .toList();
   }
 
   private static Match tallyForPosition(int position, String target, String guess) {
@@ -41,29 +42,29 @@ public class Wordle {
 
   private static int countPositionalMatches(String target, String guess, String curLetter) {
     return (int) IntStream.range(0, WORD_SIZE)
-      .filter(index -> String.valueOf(target.charAt(index)).equals(curLetter))
-      .filter(index -> String.valueOf(guess.charAt(index)).equals(curLetter))
-      .count();
+            .filter(index -> String.valueOf(target.charAt(index)).equals(curLetter))
+            .filter(index -> String.valueOf(guess.charAt(index)).equals(curLetter))
+            .count();
   }
 
   private static int countNumberOfOccurrencesUntilPosition(int position, String word, String letter) {
     return (int) IntStream.range(0, position)
-      .filter(index -> String.valueOf(word.charAt(index)).equals(letter))
-      .count();
+            .filter(index -> String.valueOf(word.charAt(index)).equals(letter))
+            .count();
   }
 
   static GameStatus getGameStatus(int attempts, boolean isAllExact){
     return ((attempts + 1) > MAX_GUESS_NUMBER) ? GameStatus.LOSS
-      : (isAllExact) ? GameStatus.WIN
-      : GameStatus.IN_PROGRESS;
+            : (isAllExact) ? GameStatus.WIN
+            : GameStatus.IN_PROGRESS;
   }
 
   static String getEndGameMessage(GameStatus gameStatus, int attempts, final String target){
     List<String> messageBank = List.of("Amazing", "Splendid", "Awesome");
 
     return (gameStatus == GameStatus.WIN) ? messageBank.get(attempts)
-      : (gameStatus == GameStatus.LOSS) ? ("It was " + target + ", better luck next time")
-      : "";
+            : (gameStatus == GameStatus.LOSS) ? ("It was " + target + ", better luck next time")
+            : "";
   }
 
   public Response play(final String target, final String guess, final int attempts) {
@@ -74,13 +75,13 @@ public class Wordle {
     var matches = tally(target, guess);
 
     boolean isAllExact = IntStream.range(0, WORD_SIZE)
-      .allMatch(index -> matches.get(index) == Match.EXACT);
+            .allMatch(index -> matches.get(index) == Match.EXACT);
 
 
     GameStatus gameStatus = getGameStatus(attempts, isAllExact);
 
     String message = gameStatus == GameStatus.WIN && attempts >= 3 ?
-      "Yay" : getEndGameMessage(gameStatus, attempts, target);
+            "Yay" : getEndGameMessage(gameStatus, attempts, target);
 
     return new Response(attempts + 1, matches, gameStatus, message);
   }
