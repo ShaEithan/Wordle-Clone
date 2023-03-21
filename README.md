@@ -15,7 +15,7 @@ We also use a GET method to help us pick a random word from a location online, a
 Make sure you have a Java JDK Installed to be able to run Gradle. <br/>
 Clone the Repository to your machine. <br/>
 Open terminal and change your current directory to the cloned repository cd .... (Your Path goes there) <br/>
-Run ** ./gradlew ui ** (for Mac) or ** /gradlew ui ** (for Windows) <br/>
+Run **./gradlew ui** (for Mac) or **/gradlew ui** (for Windows) <br/>
 
 **__Example of Application__**
 ![GamePlay](Gameplay%20Screenshot.png)
